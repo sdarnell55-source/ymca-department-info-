@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YMCA Department Information System</title>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const DEFAULT_DEPARTMENTS = [
+            'Sports',
+            'Health and Wellness',
+            'Healthy Learning Academy',
+            'Camps and PIR',
+            'Educational Programs',
+            'Memberships'
+        ];
+
+        function YMCADepartmentInfo() {
+            const [selectedDept, setSelectedDept] = useState(null);
+            const [selectedSubTab, setSelectedSubTab] = useState(null);
+            const [deptData, setDeptData] = useState({});
+            const [departments, setDepartments] = useState(DEFAULT_DEPARTMENTS);
+            const [editMode, setEditMode] = useState(false);
+            const [password, setPassword] = useState('');
+            const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+            const [editContent, setEditContent] = useState('');
+            const [newSubTabName, setNewSubTabName] = useState('');
+            const [showNewSubTab, setShowNewSubTab] = useState(false);
+            const [showNewDept, setShowNewDept] = useState(false);
+            const [newDeptName, setNewDeptName] = useState('');
+
+            useEffect(() => {
+                const saved = localStorage.getItem('ymca-dept-data-shared');
+                if (saved) setDeptData(JSON.parse(saved));
+                const savedDepts = localStorage.getItem('ymca-departments');
+                if (savedDepts) setDepartments(JSON.parse(savedDepts));
+            }, []);
+
+            const saveData = (newData) => {
+                localStorage.setItem('ymca-dept-data-shared', JSON.stringify(newData));
+                setDeptData(newData);
+            };
+
+            const saveDepartments = (newDepts) => {
+                localStorage.setItem('ymca-departments', JSON.stringify(newDepts));
+                setDepartments(newDepts);
+            };
+
+            const handleAddDepartment = () => {
+                if (!newDeptName.trim()) return alert('Please enter a department name');
+                if (departments.includes(newDeptName.trim())) return alert('Department already exists');
+                saveDepartments([...departments, newDeptName.trim()]);
+                setNewDeptName('');
+                setShowNewDept(false);
+            };
+
+            const handlePasswordSubmit = () => {
+                const storedPassword = deptData[selectedDept]?.password;
+                if (storedPassword && storedPassword === password) {
+                    setEditMode(true);
+                    setShowPasswordPrompt(false);
+                    setEditContent(deptData[selectedDept]?.subTabs?.[selectedSubTab]?.content || '');
+                } else if (!storedPassword && password.length >= 4) {
+                    saveData({
+                        ...deptData,
+                        [selectedDept]: {
+                            password: password,
+                            subTabs: { 'Main': { content: '' } }
+                        }
+                    });
+                    setEditMode(true);
+                    setShowPasswordPrompt(false);
+                    setEditContent('');
+                } else {
+                    alert('Incorrect password or too short (min 4 characters)');
+                }
+            };
+
+            const handleSaveContent = () => {
+                saveData({
+                    ...deptData,
+                    [selectedDept]: {
+                        ...deptData[selectedDept],
+                        subTabs: {
+                            ...deptData[selectedDept]?.subTabs,
+                            [selectedSubTab]: { content: editContent }
+                        }
+                    }
+                });
+                setEditMode(false);
+            };
+
+            const handleAddSubTab = () => {
+                if (!newSubTabName.trim()) return alert('Please enter a sub-tab name');
+                saveData({
+                    ...deptData,
+                    [selectedDept]: {
+                        ...deptData[selectedDept],
+                        subTabs: {
+                            ...deptData[selectedDept]?.subTabs,
+                            [newSubTabName]: { content: '' }
+                        }
+                    }
+                });
+                setSelectedSubTab(newSubTabName);
+                setNewSubTabName('');
+                setShowNewSubTab(false);
+            };
+
+            const handleDeleteSubTab = () => {
+                if (!confirm(`Delete "${selectedSubTab}"?`)) return;
+                const newSubTabs = { ...deptData[selectedDept]?.subTabs };
+                delete newSubTabs[selectedSubTab];
+                saveData({
+                    ...deptData,
+                    [selectedDept]: {
+                        ...deptData[selectedDept],
+                        subTabs: newSubTabs
+                    }
+                });
+                setSelectedSubTab(Object.keys(newSubTabs)[0] || null);
+                setEditMode(false);
+            };
+
+            const selectDepartment = (dept) => {
+                setSelectedDept(dept);
+                setEditMode(false);
+                if (!deptData[dept]?.subTabs) {
+                    setDeptData({ ...deptData, [dept]: { subTabs: { 'Main': { content: '' } } } });
+                    setSelectedSubTab('Main');
+                } else {
+                    setSelectedSubTab(Object.keys(deptData[dept].subTabs)[0]);
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4 md:p-8">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="text-center mb-6">
+                            <h1 className="text-3xl md:text-4xl font-bold text-slate-800 mb-2">YMCA</h1>
+                            <p className="text-slate-600">Department Information System</p>
+                        </div>
+
+                        {!selectedDept ? (
+                            <div className="bg-gradient-to-b from-slate-700 to-slate-800 rounded-lg shadow-2xl p-6 md:p-8 border-4 border-slate-900">
+                                <div className="bg-slate-600 text-white text-center py-3 rounded mb-6 font-bold text-lg border-2 border-slate-500">
+                                    YMCA DEPARTMENT INFORMATION
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {departments.map((dept) => (
+                                        <button
+                                            key={dept}
+                                            onClick={() => selectDepartment(dept)}
+                                            className="bg-gradient-to-br from-amber-100 to-amber-50 hover:from-amber-200 hover:to-amber-100 border-2 border-amber-800 rounded-lg shadow-md transition-all transform hover:scale-105 p-6"
+                                        >
+                                            <div className="flex flex-col items-center text-center">
+                                                <svg className="w-12 h-12 text-amber-700 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                <span className="text-lg font-semibold text-slate-800">
+                                                    {dept}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    ))}
+                                    
+                                    <button
+                                        onClick={() => setShowNewDept(true)}
+                                        className="bg-gradient-to-br from-blue-100 to-blue-50 hover:from-blue-200 hover:to-blue-100 border-2 border-blue-600 border-dashed rounded-lg shadow-md transition-all transform hover:scale-105 p-6"
+                                    >
+                                        <div className="flex flex-col items-center text-center">
+                                            <svg className="w-12 h-12 text-blue-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                            </svg>
+                                            <span className="text-lg font-semibold text-blue-700">
+                                                Add Department
+                                            </span>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-white rounded-lg shadow-xl">
+                                <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 md:p-6 rounded-t-lg">
+                                    <div className="flex items-center justify-between flex-wrap gap-4">
+                                        <div>
+                                            <button
+                                                onClick={() => { setSelectedDept(null); setEditMode(false); }}
+                                                className="text-blue-100 hover:text-white mb-2 text-sm"
+                                            >
+                                                ← Back
+                                            </button>
+                                            <h2 className="text-2xl md:text-3xl font-bold">{selectedDept}</h2>
+                                        </div>
+                                        {!editMode ? (
+                                            <button
+                                                onClick={() => setShowPasswordPrompt(true)}
+                                                className="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50"
+                                            >
+                                                🔒 Edit
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => { setEditMode(false); setPassword(''); }}
+                                                className="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50"
+                                            >
+                                                ✕ Cancel
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="border-b border-slate-200 bg-slate-50 px-4 overflow-x-auto">
+                                    <div className="flex items-center gap-2">
+                                        {deptData[selectedDept]?.subTabs && Object.keys(deptData[selectedDept].subTabs).map(subTab => (
+                                            <button
+                                                key={subTab}
+                                                onClick={() => {
+                                                    setSelectedSubTab(subTab);
+                                                    if (editMode) setEditContent(deptData[selectedDept].subTabs[subTab].content || '');
+                                                }}
+                                                className={`px-4 py-3 font-medium whitespace-nowrap ${
+                                                    selectedSubTab === subTab
+                                                        ? 'border-b-2 border-blue-600 text-blue-600'
+                                                        : 'text-slate-600'
+                                                }`}
+                                            >
+                                                {subTab}
+                                            </button>
+                                        ))}
+                                        {editMode && (
+                                            <button
+                                                onClick={() => setShowNewSubTab(true)}
+                                                className="px-4 py-3 text-slate-500 hover:text-blue-600"
+                                            >
+                                                + Sub-tab
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="p-4 md:p-6">
+                                    {editMode ? (
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center gap-2 flex-wrap">
+                                                <h3 className="font-semibold text-slate-700">Editing: {selectedSubTab}</h3>
+                                                <div className="flex gap-2">
+                                                    {selectedSubTab !== 'Main' && (
+                                                        <button
+                                                            onClick={handleDeleteSubTab}
+                                                            className="px-3 py-2 bg-red-100 text-red-600 rounded text-sm"
+                                                        >
+                                                            🗑️ Delete
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={handleSaveContent}
+                                                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                                                    >
+                                                        💾 Save
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <textarea
+                                                value={editContent}
+                                                onChange={(e) => setEditContent(e.target.value)}
+                                                className="w-full h-96 p-4 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                                                placeholder="Enter information, events, and updates here..."
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            {deptData[selectedDept]?.subTabs?.[selectedSubTab]?.content ? (
+                                                <div className="whitespace-pre-wrap text-slate-700 leading-relaxed">
+                                                    {deptData[selectedDept].subTabs[selectedSubTab].content}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-16 text-slate-400">
+                                                    <p>No information available yet.</p>
+                                                    <p className="text-sm mt-2">Department heads can add content by clicking "Edit"</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {showPasswordPrompt && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl">
+                                    <h3 className="text-xl font-bold text-slate-800 mb-4">
+                                        {deptData[selectedDept]?.password ? 'Enter Password' : 'Set Password'}
+                                    </h3>
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                                        className="w-full p-3 border-2 border-slate-300 rounded-lg mb-4 focus:border-blue-500 focus:outline-none"
+                                        placeholder="Enter password (min 4 chars)"
+                                    />
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={handlePasswordSubmit}
+                                            className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+                                        >
+                                            {deptData[selectedDept]?.password ? 'Unlock' : 'Set Password'}
+                                        </button>
+                                        <button
+                                            onClick={() => { setShowPasswordPrompt(false); setPassword(''); }}
+                                            className="flex-1 bg-slate-200 text-slate-700 py-2 rounded-lg hover:bg-slate-300"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {showNewSubTab && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl">
+                                    <h3 className="text-xl font-bold text-slate-800 mb-4">Create New Sub-tab</h3>
+                                    <input
+                                        type="text"
+                                        value={newSubTabName}
+                                        onChange={(e) => setNewSubTabName(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleAddSubTab()}
+                                        className="w-full p-3 border-2 border-slate-300 rounded-lg mb-4 focus:border-blue-500 focus:outline-none"
+                                        placeholder="Sub-tab name"
+                                    />
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={handleAddSubTab}
+                                            className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+                                        >
+                                            Create
+                                        </button>
+                                        <button
+                                            onClick={() => { setShowNewSubTab(false); setNewSubTabName(''); }}
+                                            className="flex-1 bg-slate-200 text-slate-700 py-2 rounded-lg hover:bg-slate-300"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {showNewDept && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl">
+                                    <h3 className="text-xl font-bold text-slate-800 mb-4">Add New Department</h3>
+                                    <input
+                                        type="text"
+                                        value={newDeptName}
+                                        onChange={(e) => setNewDeptName(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleAddDepartment()}
+                                        className="w-full p-3 border-2 border-slate-300 rounded-lg mb-4 focus:border-blue-500 focus:outline-none"
+                                        placeholder="Department name"
+                                    />
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={handleAddDepartment}
+                                            className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+                                        >
+                                            Add
+                                        </button>
+                                        <button
+                                            onClick={() => { setShowNewDept(false); setNewDeptName(''); }}
+                                            className="flex-1 bg-slate-200 text-slate-700 py-2 rounded-lg hover:bg-slate-300"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<YMCADepartmentInfo />, document.getElementById('root'));
+    </script>
+</body>
+</html>
+Next Steps:
+Copy all the code above (from <!DOCTYPE html> to </html>)
+Open TextEdit on your Mac
+Go to Format → Make Plain Text
+Paste the code
+Save as index.html
+Upload to GitHub following the steps I gave you earlier
+Once it's on GitHub Pages, it will work perfectly!
