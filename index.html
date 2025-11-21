@@ -14,57 +14,8 @@
     
     <script type="text/babel">
         const { useState, useEffect } = React;
-        
-        // Lucide React icons as inline SVG components
-        const FileText = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-                <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-        );
-        
-        const Plus = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-        );
-        
-        const Save = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                <polyline points="7 3 7 8 15 8"></polyline>
-            </svg>
-        );
-        
-        const X = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-        );
-        
-        const Lock = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-            </svg>
-        );
-        
-        const Trash2 = ({ size = 24, className = "" }) => (
-            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                <line x1="10" y1="11" x2="10" y2="17"></line>
-                <line x1="14" y1="11" x2="14" y2="17"></line>
-            </svg>
-        );
 
-        const DEPARTMENTS = [
+        const DEFAULT_DEPARTMENTS = [
             'Sports',
             'Health and Wellness',
             'Healthy Learning Academy',
@@ -77,70 +28,65 @@
             const [selectedDept, setSelectedDept] = useState(null);
             const [selectedSubTab, setSelectedSubTab] = useState(null);
             const [deptData, setDeptData] = useState({});
+            const [departments, setDepartments] = useState(DEFAULT_DEPARTMENTS);
             const [editMode, setEditMode] = useState(false);
             const [password, setPassword] = useState('');
             const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
             const [editContent, setEditContent] = useState('');
             const [newSubTabName, setNewSubTabName] = useState('');
             const [showNewSubTab, setShowNewSubTab] = useState(false);
+            const [showNewDept, setShowNewDept] = useState(false);
+            const [newDeptName, setNewDeptName] = useState('');
 
             useEffect(() => {
-                loadData();
+                const saved = localStorage.getItem('ymca-dept-data-shared');
+                if (saved) setDeptData(JSON.parse(saved));
+                const savedDepts = localStorage.getItem('ymca-departments');
+                if (savedDepts) setDepartments(JSON.parse(savedDepts));
             }, []);
 
-            const loadData = () => {
-                try {
-                    const saved = localStorage.getItem('ymca-dept-data-shared');
-                    if (saved) {
-                        setDeptData(JSON.parse(saved));
-                    }
-                } catch (error) {
-                    console.log('No existing data found, starting fresh');
-                }
-            };
-
             const saveData = (newData) => {
-                try {
-                    localStorage.setItem('ymca-dept-data-shared', JSON.stringify(newData));
-                    setDeptData(newData);
-                } catch (error) {
-                    alert('Error saving data. Please try again.');
-                }
+                localStorage.setItem('ymca-dept-data-shared', JSON.stringify(newData));
+                setDeptData(newData);
             };
 
-            const handleEditClick = () => {
-                setShowPasswordPrompt(true);
-                setPassword('');
+            const saveDepartments = (newDepts) => {
+                localStorage.setItem('ymca-departments', JSON.stringify(newDepts));
+                setDepartments(newDepts);
+            };
+
+            const handleAddDepartment = () => {
+                if (!newDeptName.trim()) return alert('Please enter a department name');
+                if (departments.includes(newDeptName.trim())) return alert('Department already exists');
+                saveDepartments([...departments, newDeptName.trim()]);
+                setNewDeptName('');
+                setShowNewDept(false);
             };
 
             const handlePasswordSubmit = () => {
                 const storedPassword = deptData[selectedDept]?.password;
-                
                 if (storedPassword && storedPassword === password) {
                     setEditMode(true);
                     setShowPasswordPrompt(false);
-                    const currentContent = deptData[selectedDept]?.subTabs?.[selectedSubTab]?.content || '';
-                    setEditContent(currentContent);
+                    setEditContent(deptData[selectedDept]?.subTabs?.[selectedSubTab]?.content || '');
                 } else if (!storedPassword && password.length >= 4) {
-                    const newData = {
+                    saveData({
                         ...deptData,
                         [selectedDept]: {
-                            ...deptData[selectedDept],
                             password: password,
-                            subTabs: deptData[selectedDept]?.subTabs || { 'Main': { content: '' } }
+                            subTabs: { 'Main': { content: '' } }
                         }
-                    };
-                    saveData(newData);
+                    });
                     setEditMode(true);
                     setShowPasswordPrompt(false);
                     setEditContent('');
                 } else {
-                    alert('Incorrect password or password too short (minimum 4 characters)');
+                    alert('Incorrect password or too short (min 4 characters)');
                 }
             };
 
             const handleSaveContent = () => {
-                const newData = {
+                saveData({
                     ...deptData,
                     [selectedDept]: {
                         ...deptData[selectedDept],
@@ -149,18 +95,13 @@
                             [selectedSubTab]: { content: editContent }
                         }
                     }
-                };
-                saveData(newData);
+                });
                 setEditMode(false);
-                setPassword('');
             };
 
             const handleAddSubTab = () => {
-                if (!newSubTabName.trim()) {
-                    alert('Please enter a sub-tab name');
-                    return;
-                }
-                const newData = {
+                if (!newSubTabName.trim()) return alert('Please enter a sub-tab name');
+                saveData({
                     ...deptData,
                     [selectedDept]: {
                         ...deptData[selectedDept],
@@ -169,27 +110,23 @@
                             [newSubTabName]: { content: '' }
                         }
                     }
-                };
-                saveData(newData);
+                });
                 setSelectedSubTab(newSubTabName);
                 setNewSubTabName('');
                 setShowNewSubTab(false);
             };
 
             const handleDeleteSubTab = () => {
-                if (!confirm(`Are you sure you want to delete the "${selectedSubTab}" sub-tab?`)) {
-                    return;
-                }
+                if (!confirm(`Delete "${selectedSubTab}"?`)) return;
                 const newSubTabs = { ...deptData[selectedDept]?.subTabs };
                 delete newSubTabs[selectedSubTab];
-                const newData = {
+                saveData({
                     ...deptData,
                     [selectedDept]: {
                         ...deptData[selectedDept],
                         subTabs: newSubTabs
                     }
-                };
-                saveData(newData);
+                });
                 setSelectedSubTab(Object.keys(newSubTabs)[0] || null);
                 setEditMode(false);
             };
@@ -197,16 +134,8 @@
             const selectDepartment = (dept) => {
                 setSelectedDept(dept);
                 setEditMode(false);
-                setPassword('');
                 if (!deptData[dept]?.subTabs) {
-                    const newData = {
-                        ...deptData,
-                        [dept]: {
-                            ...deptData[dept],
-                            subTabs: { 'Main': { content: '' } }
-                        }
-                    };
-                    setDeptData(newData);
+                    setDeptData({ ...deptData, [dept]: { subTabs: { 'Main': { content: '' } } } });
                     setSelectedSubTab('Main');
                 } else {
                     setSelectedSubTab(Object.keys(deptData[dept].subTabs)[0]);
@@ -214,94 +143,96 @@
             };
 
             return (
-                <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-8">
+                <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 p-4 md:p-8">
                     <div className="max-w-7xl mx-auto">
-                        <div className="text-center mb-8">
-                            <h1 className="text-4xl font-bold text-slate-800 mb-2">YMCA</h1>
+                        <div className="text-center mb-6">
+                            <h1 className="text-3xl md:text-4xl font-bold text-slate-800 mb-2">YMCA</h1>
                             <p className="text-slate-600">Department Information System</p>
                         </div>
 
                         {!selectedDept ? (
-                            <div className="bg-gradient-to-b from-slate-700 to-slate-800 rounded-lg shadow-2xl p-8 border-4 border-slate-900">
+                            <div className="bg-gradient-to-b from-slate-700 to-slate-800 rounded-lg shadow-2xl p-6 md:p-8 border-4 border-slate-900">
                                 <div className="bg-slate-600 text-white text-center py-3 rounded mb-6 font-bold text-lg border-2 border-slate-500">
                                     YMCA DEPARTMENT INFORMATION
                                 </div>
                                 
-                                <div className="space-y-2">
-                                    {DEPARTMENTS.map((dept, idx) => (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {departments.map((dept) => (
                                         <button
                                             key={dept}
                                             onClick={() => selectDepartment(dept)}
-                                            className="w-full bg-gradient-to-r from-amber-100 to-amber-50 hover:from-amber-200 hover:to-amber-100 border-2 border-amber-800 rounded-r-lg shadow-md transition-all transform hover:translate-x-2 group"
+                                            className="bg-gradient-to-br from-amber-100 to-amber-50 hover:from-amber-200 hover:to-amber-100 border-2 border-amber-800 rounded-lg shadow-md transition-all transform hover:scale-105 p-6"
                                         >
-                                            <div className="flex items-center p-4">
-                                                <div className="bg-amber-700 text-white px-4 py-2 rounded font-semibold mr-4 min-w-[40px] text-center">
-                                                    {idx + 1}
-                                                </div>
-                                                <FileText size={24} className="text-amber-700 mr-3" />
-                                                <span className="text-lg font-semibold text-slate-800 group-hover:text-slate-900">
+                                            <div className="flex flex-col items-center text-center">
+                                                <svg className="w-12 h-12 text-amber-700 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                <span className="text-lg font-semibold text-slate-800">
                                                     {dept}
                                                 </span>
                                             </div>
                                         </button>
                                     ))}
+                                    
+                                    <button
+                                        onClick={() => setShowNewDept(true)}
+                                        className="bg-gradient-to-br from-blue-100 to-blue-50 hover:from-blue-200 hover:to-blue-100 border-2 border-blue-600 border-dashed rounded-lg shadow-md transition-all transform hover:scale-105 p-6"
+                                    >
+                                        <div className="flex flex-col items-center text-center">
+                                            <svg className="w-12 h-12 text-blue-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                            </svg>
+                                            <span className="text-lg font-semibold text-blue-700">
+                                                Add Department
+                                            </span>
+                                        </div>
+                                    </button>
                                 </div>
                             </div>
                         ) : (
                             <div className="bg-white rounded-lg shadow-xl">
-                                <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-lg">
-                                    <div className="flex items-center justify-between">
+                                <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 md:p-6 rounded-t-lg">
+                                    <div className="flex items-center justify-between flex-wrap gap-4">
                                         <div>
                                             <button
-                                                onClick={() => {
-                                                    setSelectedDept(null);
-                                                    setEditMode(false);
-                                                    setPassword('');
-                                                }}
-                                                className="text-blue-100 hover:text-white mb-2 flex items-center text-sm"
+                                                onClick={() => { setSelectedDept(null); setEditMode(false); }}
+                                                className="text-blue-100 hover:text-white mb-2 text-sm"
                                             >
-                                                ← Back to Filing Cabinet
+                                                ← Back
                                             </button>
-                                            <h2 className="text-3xl font-bold">{selectedDept}</h2>
+                                            <h2 className="text-2xl md:text-3xl font-bold">{selectedDept}</h2>
                                         </div>
                                         {!editMode ? (
                                             <button
-                                                onClick={handleEditClick}
-                                                className="bg-white text-blue-600 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-50 transition"
+                                                onClick={() => setShowPasswordPrompt(true)}
+                                                className="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50"
                                             >
-                                                <Lock size={18} />
-                                                Edit (Dept Head)
+                                                🔒 Edit
                                             </button>
                                         ) : (
                                             <button
-                                                onClick={() => {
-                                                    setEditMode(false);
-                                                    setPassword('');
-                                                }}
-                                                className="bg-white text-blue-600 px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-50 transition"
+                                                onClick={() => { setEditMode(false); setPassword(''); }}
+                                                className="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50"
                                             >
-                                                <X size={18} />
-                                                Cancel
+                                                ✕ Cancel
                                             </button>
                                         )}
                                     </div>
                                 </div>
 
-                                <div className="border-b border-slate-200 bg-slate-50 px-6">
-                                    <div className="flex items-center gap-2 overflow-x-auto">
+                                <div className="border-b border-slate-200 bg-slate-50 px-4 overflow-x-auto">
+                                    <div className="flex items-center gap-2">
                                         {deptData[selectedDept]?.subTabs && Object.keys(deptData[selectedDept].subTabs).map(subTab => (
                                             <button
                                                 key={subTab}
                                                 onClick={() => {
                                                     setSelectedSubTab(subTab);
-                                                    if (editMode) {
-                                                        setEditContent(deptData[selectedDept].subTabs[subTab].content || '');
-                                                    }
+                                                    if (editMode) setEditContent(deptData[selectedDept].subTabs[subTab].content || '');
                                                 }}
-                                                className={`px-4 py-3 font-medium transition whitespace-nowrap ${
+                                                className={`px-4 py-3 font-medium whitespace-nowrap ${
                                                     selectedSubTab === subTab
                                                         ? 'border-b-2 border-blue-600 text-blue-600'
-                                                        : 'text-slate-600 hover:text-slate-800'
+                                                        : 'text-slate-600'
                                                 }`}
                                             >
                                                 {subTab}
@@ -310,58 +241,51 @@
                                         {editMode && (
                                             <button
                                                 onClick={() => setShowNewSubTab(true)}
-                                                className="px-4 py-3 text-slate-500 hover:text-blue-600 flex items-center gap-1"
+                                                className="px-4 py-3 text-slate-500 hover:text-blue-600"
                                             >
-                                                <Plus size={18} />
-                                                Add Sub-tab
+                                                + Sub-tab
                                             </button>
                                         )}
                                     </div>
                                 </div>
 
-                                <div className="p-6">
+                                <div className="p-4 md:p-6">
                                     {editMode ? (
                                         <div className="space-y-4">
-                                            <div className="flex justify-between items-center mb-4">
-                                                <h3 className="text-lg font-semibold text-slate-700">Editing: {selectedSubTab}</h3>
+                                            <div className="flex justify-between items-center gap-2 flex-wrap">
+                                                <h3 className="font-semibold text-slate-700">Editing: {selectedSubTab}</h3>
                                                 <div className="flex gap-2">
                                                     {selectedSubTab !== 'Main' && (
                                                         <button
                                                             onClick={handleDeleteSubTab}
-                                                            className="px-3 py-2 bg-red-100 text-red-600 rounded hover:bg-red-200 flex items-center gap-2"
+                                                            className="px-3 py-2 bg-red-100 text-red-600 rounded text-sm"
                                                         >
-                                                            <Trash2 size={16} />
-                                                            Delete Sub-tab
+                                                            🗑️ Delete
                                                         </button>
                                                     )}
                                                     <button
                                                         onClick={handleSaveContent}
-                                                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                                                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                                                     >
-                                                        <Save size={18} />
-                                                        Save Changes
+                                                        💾 Save
                                                     </button>
                                                 </div>
                                             </div>
                                             <textarea
                                                 value={editContent}
                                                 onChange={(e) => setEditContent(e.target.value)}
-                                                className="w-full h-96 p-4 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:outline-none font-mono text-sm"
+                                                className="w-full h-96 p-4 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:outline-none"
                                                 placeholder="Enter information, events, and updates here..."
                                             />
-                                            <p className="text-sm text-slate-500">
-                                                Tip: You can format your content with headings, lists, dates, etc.
-                                            </p>
                                         </div>
                                     ) : (
-                                        <div className="prose max-w-none">
+                                        <div>
                                             {deptData[selectedDept]?.subTabs?.[selectedSubTab]?.content ? (
                                                 <div className="whitespace-pre-wrap text-slate-700 leading-relaxed">
                                                     {deptData[selectedDept].subTabs[selectedSubTab].content}
                                                 </div>
                                             ) : (
                                                 <div className="text-center py-16 text-slate-400">
-                                                    <FileText size={48} className="mx-auto mb-4 opacity-50" />
                                                     <p>No information available yet.</p>
                                                     <p className="text-sm mt-2">Department heads can add content by clicking "Edit"</p>
                                                 </div>
@@ -373,38 +297,29 @@
                         )}
 
                         {showPasswordPrompt && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                                <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl">
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl">
                                     <h3 className="text-xl font-bold text-slate-800 mb-4">
                                         {deptData[selectedDept]?.password ? 'Enter Password' : 'Set Password'}
                                     </h3>
-                                    <p className="text-slate-600 mb-4">
-                                        {deptData[selectedDept]?.password 
-                                            ? 'Enter your department password to edit content.'
-                                            : 'Set a password for this department (minimum 4 characters).'}
-                                    </p>
                                     <input
                                         type="password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
                                         className="w-full p-3 border-2 border-slate-300 rounded-lg mb-4 focus:border-blue-500 focus:outline-none"
-                                        placeholder="Enter password"
-                                        autoFocus
+                                        placeholder="Enter password (min 4 chars)"
                                     />
                                     <div className="flex gap-3">
                                         <button
                                             onClick={handlePasswordSubmit}
-                                            className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium"
+                                            className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
                                         >
                                             {deptData[selectedDept]?.password ? 'Unlock' : 'Set Password'}
                                         </button>
                                         <button
-                                            onClick={() => {
-                                                setShowPasswordPrompt(false);
-                                                setPassword('');
-                                            }}
-                                            className="flex-1 bg-slate-200 text-slate-700 py-2 rounded-lg hover:bg-slate-300 font-medium"
+                                            onClick={() => { setShowPasswordPrompt(false); setPassword(''); }}
+                                            className="flex-1 bg-slate-200 text-slate-700 py-2 rounded-lg hover:bg-slate-300"
                                         >
                                             Cancel
                                         </button>
@@ -414,8 +329,8 @@
                         )}
 
                         {showNewSubTab && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                                <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl">
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl">
                                     <h3 className="text-xl font-bold text-slate-800 mb-4">Create New Sub-tab</h3>
                                     <input
                                         type="text"
@@ -424,21 +339,47 @@
                                         onKeyPress={(e) => e.key === 'Enter' && handleAddSubTab()}
                                         className="w-full p-3 border-2 border-slate-300 rounded-lg mb-4 focus:border-blue-500 focus:outline-none"
                                         placeholder="Sub-tab name"
-                                        autoFocus
                                     />
                                     <div className="flex gap-3">
                                         <button
                                             onClick={handleAddSubTab}
-                                            className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium"
+                                            className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
                                         >
                                             Create
                                         </button>
                                         <button
-                                            onClick={() => {
-                                                setShowNewSubTab(false);
-                                                setNewSubTabName('');
-                                            }}
-                                            className="flex-1 bg-slate-200 text-slate-700 py-2 rounded-lg hover:bg-slate-300 font-medium"
+                                            onClick={() => { setShowNewSubTab(false); setNewSubTabName(''); }}
+                                            className="flex-1 bg-slate-200 text-slate-700 py-2 rounded-lg hover:bg-slate-300"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {showNewDept && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                                <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl">
+                                    <h3 className="text-xl font-bold text-slate-800 mb-4">Add New Department</h3>
+                                    <input
+                                        type="text"
+                                        value={newDeptName}
+                                        onChange={(e) => setNewDeptName(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleAddDepartment()}
+                                        className="w-full p-3 border-2 border-slate-300 rounded-lg mb-4 focus:border-blue-500 focus:outline-none"
+                                        placeholder="Department name"
+                                    />
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={handleAddDepartment}
+                                            className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+                                        >
+                                            Add
+                                        </button>
+                                        <button
+                                            onClick={() => { setShowNewDept(false); setNewDeptName(''); }}
+                                            className="flex-1 bg-slate-200 text-slate-700 py-2 rounded-lg hover:bg-slate-300"
                                         >
                                             Cancel
                                         </button>
@@ -455,3 +396,11 @@
     </script>
 </body>
 </html>
+Next Steps:
+Copy all the code above (from <!DOCTYPE html> to </html>)
+Open TextEdit on your Mac
+Go to Format → Make Plain Text
+Paste the code
+Save as index.html
+Upload to GitHub following the steps I gave you earlier
+Once it's on GitHub Pages, it will work perfectly!
